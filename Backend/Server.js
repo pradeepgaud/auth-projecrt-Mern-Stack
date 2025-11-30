@@ -91,7 +91,7 @@ connectDB();
 
 // ALLOWED FRONTEND URL (Vercel)
 const allowedOrigins = [
-  "https://auth-projecrt-mern-stack-e6bsof409-pradeep-gauds-projects.vercel.app",
+  "https://auth-projecrt-mern-stack.vercel.app/",
   "http://localhost:5173",
 ];
 
