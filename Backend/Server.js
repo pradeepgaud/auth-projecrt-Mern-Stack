@@ -11,23 +11,36 @@ const port = process.env.PORT || 4000;
 
 connectDB();
 
-// ✅ ALLOWED FRONTEND URL
+// ⭐ Add your correct Vercel frontend URL here
 const allowedOrigins = [
-  "https://auth-projecrt-mern-stack-e6bsof409-pradeep-gauds-projects.vercel.app",
+  "https://auth-projecrt-mern-stack-qkudlvi9c-pradeep-gauds-projects.vercel.app",
   "http://localhost:5173",
 ];
 
 app.use(express.json());
 app.use(cookieParser());
 
+// ⭐ Stable CORS Configuration (Best for Render + Vercel)
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+      // Allow Postman & server-to-server requests
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS: " + origin));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+// ⭐ Fix preflight failure (OPTIONS request)
+app.options("*", cors());
 
 app.get("/", (req, res) => {
   res.send("Backend Connected Successfully!");
