@@ -86,39 +86,48 @@ import userRouter from "./Routes/UserRoutes.js";
 const app = express();
 const port = process.env.PORT || 4000;
 
-// Connect Database
+// DB
 connectDB();
 
-// ALLOWED FRONTEND URL (Vercel)
+// ALLOWED FRONTEND ORIGINS
 const allowedOrigins = [
-  "https://auth-projecrt-mern-stack-e6bsof409-pradeep-gauds-projects.vercel.app",
   "http://localhost:5173",
+  "https://mern-auth-anqn0pez8-pradeep-gauds-projects.vercel.app/",
 ];
 
-// MIDDLEWARES
+// MIDDLEWARE
 app.use(express.json());
 app.use(cookieParser());
 
-// CORS SETTINGS    
+// CORS
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-// DEFAULT ROUTE
+// Preflight
+app.options("*", cors());
+
+// ROUTES
 app.get("/", (req, res) => {
   res.send("Backend Connected Successfully!");
 });
 
-// API ROUTES
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 
-// START SERVER
+// SERVER
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  console.log(`Server running on port ${port}`);
 });
+
