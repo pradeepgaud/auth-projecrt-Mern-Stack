@@ -8,7 +8,7 @@ const AppContext = createContext();
 export const AppContextProvider = (props) => {
   // ✅ FIX: Add fallback URL if env variable not found
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 
-    "https://auth-projecrt-mern-stack.onrender.com";
+    "https://auth-project-mem-stack.onrender.com"; // "projecrt" → "project"
 
   console.log("Using Backend URL:", backendUrl); // Debug log
 
