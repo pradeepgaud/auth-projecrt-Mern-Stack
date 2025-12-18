@@ -7,49 +7,23 @@ import { toast } from "react-toastify";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { backendUrl, setIsLoggedin, getUserData } = useContext(AppContext);
   
-  // ✅ EMERGENCY FIX - Hardcode correct backend URL
-  const CORRECT_BACKEND_URL = "https://auth-project-mem-stack.onrender.com";
+  // ✅ ONLY ONE CORRECT URL - Remove all others
+  const BACKEND_URL = "https://auth-projecrt-mern-stack.onrender.com";
   
-  console.log("🔍 [Login Debug]");
-  console.log("Context backendUrl:", backendUrl);
-  console.log("Using URL:", CORRECT_BACKEND_URL);
+  console.log("✅ USING BACKEND URL:", BACKEND_URL);
   
   const [state, setState] = useState("Sign Up");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [debugInfo, setDebugInfo] = useState("");
-
-  // ✅ Test backend connection on load
-  useEffect(() => {
-    const testBackend = async () => {
-      try {
-        console.log("🔗 Testing backend connection...");
-        const response = await fetch(CORRECT_BACKEND_URL);
-        const data = await response.text();
-        console.log("✅ Backend response:", data);
-        setDebugInfo(`Backend: ${response.status} OK`);
-      } catch (error) {
-        console.error("❌ Backend test failed:", error.message);
-        setDebugInfo(`Backend: ${error.message}`);
-      }
-    };
-    
-    testBackend();
-  }, []);
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
     
-    console.log("🚀 [Form Submission Started]");
-    console.log("📝 Mode:", state);
-    console.log("📧 Email:", email);
-    console.log("🔗 Backend URL:", CORRECT_BACKEND_URL);
+    console.log("🚀 BACKEND URL:", BACKEND_URL);
     
-    // Validation
     if (!email || !password) {
       toast.error("Email and password are required");
       return;
@@ -64,11 +38,9 @@ const Login = () => {
     
     try {
       const endpoint = state === "Sign Up" ? "register" : "login";
-      const url = `${CORRECT_BACKEND_URL}/api/auth/${endpoint}`;
+      const url = `${BACKEND_URL}/api/auth/${endpoint}`;
       
-      console.log("🌐 Making request to:", url);
-      
-      const startTime = Date.now();
+      console.log("🌐 API URL:", url);
       
       const { data } = await axios.post(
         url,
@@ -79,115 +51,79 @@ const Login = () => {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           },
-          timeout: 60000 // 60 seconds for Render free tier
+          timeout: 60000
         }
       );
       
-      const responseTime = Date.now() - startTime;
-      console.log(`✅ Response received in ${responseTime}ms`);
-      console.log("📦 Response data:", data);
+      console.log("✅ Response:", data);
       
       if (data.success) {
-        console.log("🎉 Success! User:", data.user);
-        setIsLoggedin(true);
-        getUserData();
-        navigate("/");
         toast.success(state === "Sign Up" ? "Account created!" : "Login successful!");
+        window.location.href = "/"; // Force refresh
       } else {
-        console.warn("⚠️ API returned error:", data.message);
         toast.error(data.message);
       }
       
     } catch (error) {
-      console.error("❌ [Error Details]:", {
-        name: error.name,
-        message: error.message,
-        code: error.code,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        url: error.config?.url,
-        data: error.response?.data
-      });
+      console.error("❌ Full Error:", error);
+      console.error("❌ Error URL:", error.config?.url);
       
-      // Specific error handling
       if (error.code === 'ERR_NETWORK') {
-        toast.error("Network error. Check backend URL and CORS.");
-        console.error("💡 Check backend:", CORRECT_BACKEND_URL);
-      } else if (error.response?.status === 404) {
-        toast.error("API endpoint not found.");
-        console.error("🔍 Test endpoint:", `${CORRECT_BACKEND_URL}/api/test`);
-      } else if (error.response?.status === 500) {
-        toast.error("Server error. Check backend logs.");
-      } else if (error.code === 'ECONNABORTED') {
-        toast.error("Timeout - Backend might be sleeping (Render free tier). Try again.");
+        toast.error(
+          <div>
+            <div>CORS Error Detected</div>
+            <div className="text-xs">Backend URL: {BACKEND_URL}</div>
+            <div className="text-xs">Check server.js CORS settings</div>
+          </div>
+        );
       } else {
-        toast.error(error.response?.data?.message || error.message || "Something went wrong");
+        toast.error(error.response?.data?.message || error.message);
       }
     } finally {
       setIsLoading(false);
     }
   };
 
+  // ✅ Test backend immediately
+  useEffect(() => {
+    console.log("🔗 Testing backend connection to:", BACKEND_URL);
+    
+    // Open backend in new tab for manual check
+    setTimeout(() => {
+      window.open(BACKEND_URL, '_blank');
+    }, 1000);
+  }, []);
+
   return (
     <div className="flex items-center justify-center min-h-screen px-6 sm:px-0 bg-gradient-to-br from-blue-200 to-purple-400">
-      <img
-        onClick={() => navigate("/")}
-        src={assets.logo}
-        alt=""
-        className="absolute left-5 sm:left-20 top-5 w-28 sm:w-32 cursor-pointer"
-      />
-
-      {/* ✅ DEBUG INFO PANEL */}
-      <div className="absolute top-20 right-5 bg-black/90 text-white p-4 rounded-lg text-xs max-w-xs">
-        <div className="font-bold mb-2 text-yellow-300">🔧 Debug Panel</div>
-        <div className="mb-1">
-          <span className="text-gray-400">Backend URL:</span>
-          <div className="truncate text-green-300">{CORRECT_BACKEND_URL}</div>
+      
+      {/* ✅ BIG WARNING BOX */}
+      <div className="absolute top-5 left-1/2 transform -translate-x-1/2 bg-red-900 border-2 border-red-500 text-white p-4 rounded-lg w-11/12 max-w-2xl z-50">
+        <div className="font-bold text-lg mb-2">⚠️ CRITICAL FIX NEEDED</div>
+        <div className="mb-2">
+          <span className="text-yellow-300">Current Backend URL:</span>
+          <div className="bg-black p-2 rounded mt-1 font-mono break-all">
+            {BACKEND_URL}
+          </div>
         </div>
-        <div className="mb-1">
-          <span className="text-gray-400">Status:</span>
-          <span className={`ml-2 ${debugInfo.includes('OK') ? 'text-green-400' : 'text-red-400'}`}>
-            {debugInfo || "Testing..."}
-          </span>
-        </div>
-        <div className="mb-1">
-          <span className="text-gray-400">Mode:</span>
-          <span className="ml-2">{state}</span>
+        <div className="text-sm">
+          <div className="mb-1">✅ CORRECT: <span className="text-green-300">auth-projecrt-mern-stack.onrender.com</span></div>
+          <div className="mb-1">❌ WRONG: <span className="text-red-300 line-through">auth-project-mem-stack.onrender.com</span></div>
         </div>
         <button 
-          onClick={() => window.open(CORRECT_BACKEND_URL, '_blank')}
-          className="mt-2 w-full bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded text-xs"
+          onClick={() => window.open(BACKEND_URL, '_blank')}
+          className="mt-3 w-full bg-blue-600 hover:bg-blue-700 py-2 rounded font-bold"
         >
-          Test Backend ↗
-        </button>
-        <button 
-          onClick={() => console.clear()}
-          className="mt-1 w-full bg-gray-700 hover:bg-gray-800 px-3 py-1.5 rounded text-xs"
-        >
-          Clear Console
+          Open Backend in New Tab
         </button>
       </div>
 
-      <div className="bg-slate-900 p-10 rounded-lg shadow-lg w-full sm:w-96 text-indigo-300 text-sm">
+      <div className="mt-32 bg-slate-900 p-10 rounded-lg shadow-lg w-full sm:w-96 text-indigo-300 text-sm">
         <h2 className="text-3xl font-semibold text-white text-center mb-3">
           {state === "Sign Up" ? "Create Account" : "Login"}
         </h2>
 
-        <p className="text-center text-sm mb-6">
-          {state === "Sign Up"
-            ? "Create Your Account"
-            : "Login to Your Account!"}
-        </p>
-
-        {/* ✅ BACKEND STATUS */}
-        <div className={`mb-4 p-3 rounded text-xs ${debugInfo.includes('OK') ? 'bg-green-900/30 border border-green-500' : 'bg-red-900/30 border border-red-500'}`}>
-          <div className="font-bold">
-            {debugInfo.includes('OK') ? '✅ Backend Connected' : '❌ Backend Issue'}
-          </div>
-          <div className="truncate mt-1">{debugInfo}</div>
-        </div>
-
-        {/* Form Start */}
+        {/* Form */}
         <form onSubmit={onSubmitHandler}>
           {state === "Sign Up" && (
             <div className="mb-4 flex items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5c]">
@@ -231,53 +167,48 @@ const Login = () => {
             />
           </div>
 
-          <p
-            onClick={() => !isLoading && navigate("/reset-password")}
-            className={`mb-4 ${isLoading ? 'text-gray-500' : 'text-indigo-500 cursor-pointer'}`}
-          >
-            Forget password?
-          </p>
-
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full py-2.5 rounded-full text-white font-medium flex items-center justify-center transition-all ${
-              isLoading 
-                ? 'bg-gray-600 cursor-not-allowed' 
-                : 'bg-gradient-to-r from-indigo-500 to-indigo-900 hover:from-indigo-600 hover:to-indigo-950'
-            }`}
+            className="w-full py-2.5 rounded-full bg-gradient-to-r from-indigo-500 to-indigo-900 text-white font-medium hover:from-indigo-600 hover:to-indigo-950"
           >
-            {isLoading ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Processing...
-              </>
-            ) : (
-              state
-            )}
+            {isLoading ? "Processing..." : state}
           </button>
         </form>
 
-        {/* ✅ DEBUG TIPS */}
-        <div className="mt-4 p-3 bg-gray-800/50 rounded text-xs">
-          <div className="font-bold mb-1">💡 If facing issues:</div>
-          <ol className="list-decimal pl-4 space-y-1">
-            <li>Open Console (F12)</li>
-            <li>Check Network tab</li>
-            <li>Wait 30-60s for first request</li>
-            <li>Check Render backend logs</li>
-          </ol>
+        {/* ✅ DEBUG INFO */}
+        <div className="mt-6 p-4 bg-gray-800 rounded text-xs">
+          <div className="font-bold mb-2">🔧 Debug Information:</div>
+          <div className="mb-1">Frontend: <span className="text-blue-300">auth-projecrt-mern-stack.vercel.app</span></div>
+          <div className="mb-1">Backend: <span className="text-green-300">{BACKEND_URL}</span></div>
+          <div className="mb-1">CORS: <span className="text-yellow-300">Must allow frontend origin</span></div>
+          <div className="mt-3">
+            <button 
+              onClick={() => {
+                console.clear();
+                console.log("🔄 Manual Test");
+                console.log("Frontend:", window.location.origin);
+                console.log("Backend:", BACKEND_URL);
+                console.log("Testing CORS...");
+                
+                // Test CORS
+                fetch(BACKEND_URL, { mode: 'no-cors' })
+                  .then(() => console.log("✅ Backend reachable (no-cors)"))
+                  .catch(err => console.error("❌ Error:", err));
+              }}
+              className="w-full bg-gray-700 hover:bg-gray-600 py-2 rounded"
+            >
+              Test in Console
+            </button>
+          </div>
         </div>
 
         {state === "Sign Up" ? (
           <p className="text-gray-400 text-center text-xs mt-4">
             Already have an account?{" "}
             <span
-              onClick={() => !isLoading && setState("Login")}
-              className={`${isLoading ? 'text-gray-500' : 'text-blue-400 cursor-pointer underline'}`}
+              onClick={() => setState("Login")}
+              className="text-blue-400 cursor-pointer underline"
             >
               Login here
             </span>
@@ -286,8 +217,8 @@ const Login = () => {
           <p className="text-gray-400 text-center text-xs mt-4">
             Don't have an account?{" "}
             <span
-              onClick={() => !isLoading && setState("Sign Up")}
-              className={`${isLoading ? 'text-gray-500' : 'text-blue-400 cursor-pointer underline'}`}
+              onClick={() => setState("Sign Up")}
+              className="text-blue-400 cursor-pointer underline"
             >
               Sign Up
             </span>
