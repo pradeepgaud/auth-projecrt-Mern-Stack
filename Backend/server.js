@@ -17,31 +17,26 @@ app.use(express.json());
 app.use(cookieParser());
 
 // ✅ CORS CONFIG (SINGLE & CORRECT)
+// Backend CORS में explicitly add करें
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (Postman, mobile apps, server-to-server)
-      if (!origin) return callback(null, true);
-
-      // Allow localhost
-      if (origin === "http://localhost:5173") {
-        return callback(null, true);
+      const allowedOrigins = [
+        "http://localhost:5173",
+        "https://auth-projecrt-mern-stack.vercel.app",
+        "https://auth-projecrt-mern-stack.vercel.app/",
+        // और भी Vercel preview URLs
+      ];
+      
+      if (!origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
       }
-
-      // Allow ALL Vercel domains
-      if (origin.endsWith(".vercel.app")) {
-        return callback(null, true);
-      }
-
-      // Block others
-      return callback(new Error("Not allowed by CORS"));
     },
-    credentials: true, // Cookies allow karne ke liye
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   })
 );
-
 // Routes
 app.get("/", (req, res) => {
   res.send("Backend Connected Successfully!");
