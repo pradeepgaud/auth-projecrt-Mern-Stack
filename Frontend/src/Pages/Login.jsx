@@ -7,154 +7,119 @@ import { toast } from "react-toastify";
 
 const Login = () => {
   const navigate = useNavigate();
-
   const { backendUrl, setIsLoggedin, getUserData } = useContext(AppContext);
   
-  // ✅ DEBUG: Log context data
-  useEffect(() => {
-    console.log("🔍 [Login Component Mounted]");
-    console.log("✅ Backend URL from Context:", backendUrl);
-    console.log("✅ Is backendUrl correct?", 
-      backendUrl === "https://auth-project-mem-stack.onrender.com" 
-      ? "YES ✓" 
-      : `NO ❌ (It is: ${backendUrl})`);
-  }, [backendUrl]);
-
+  // ✅ EMERGENCY FIX - Hardcode correct backend URL
+  const CORRECT_BACKEND_URL = "https://auth-project-mem-stack.onrender.com";
+  
+  console.log("🔍 [Login Debug]");
+  console.log("Context backendUrl:", backendUrl);
+  console.log("Using URL:", CORRECT_BACKEND_URL);
+  
   const [state, setState] = useState("Sign Up");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState("");
+
+  // ✅ Test backend connection on load
+  useEffect(() => {
+    const testBackend = async () => {
+      try {
+        console.log("🔗 Testing backend connection...");
+        const response = await fetch(CORRECT_BACKEND_URL);
+        const data = await response.text();
+        console.log("✅ Backend response:", data);
+        setDebugInfo(`Backend: ${response.status} OK`);
+      } catch (error) {
+        console.error("❌ Backend test failed:", error.message);
+        setDebugInfo(`Backend: ${error.message}`);
+      }
+    };
+    
+    testBackend();
+  }, []);
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
     
-    // ✅ DEBUG: Log form data
-    console.log("📋 [Form Submission Started]");
+    console.log("🚀 [Form Submission Started]");
     console.log("📝 Mode:", state);
     console.log("📧 Email:", email);
-    console.log("🔒 Password length:", password.length);
+    console.log("🔗 Backend URL:", CORRECT_BACKEND_URL);
     
     // Validation
     if (!email || !password) {
       toast.error("Email and password are required");
-      console.warn("⚠️ Validation failed: Missing email or password");
       return;
     }
 
     if (state === "Sign Up" && !name) {
       toast.error("Name is required for sign up");
-      console.warn("⚠️ Validation failed: Missing name");
       return;
     }
 
     setIsLoading(true);
     
     try {
-      axios.defaults.withCredentials = true;
+      const endpoint = state === "Sign Up" ? "register" : "login";
+      const url = `${CORRECT_BACKEND_URL}/api/auth/${endpoint}`;
       
-      // ✅ DEBUG: Log the exact URL being called
-      const apiEndpoint = state === "Sign Up" ? "register" : "login";
-      const fullUrl = `${backendUrl}/api/auth/${apiEndpoint}`;
-      
-      console.log("🚀 [API Call Details]");
-      console.log("🌐 Full URL:", fullUrl);
-      console.log("📤 Request Data:", { 
-        name: state === "Sign Up" ? name : "Not required for login", 
-        email, 
-        password: "***" // Don't log actual password
-      });
+      console.log("🌐 Making request to:", url);
       
       const startTime = Date.now();
-
-      if (state === "Sign Up") {
-        const { data } = await axios.post(
-          `${backendUrl}/api/auth/register`,
-          { name, email, password },
-          { 
-            withCredentials: true,
-            timeout: 30000, // 30 second timeout
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-
-        console.log("⏱️ Request took:", Date.now() - startTime, "ms");
-        console.log("✅ [Register Response]:", data);
-
-        if (data.success) {
-          console.log("🎉 Registration successful!");
-          setIsLoggedin(true);
-          getUserData();
-          navigate("/");
-          toast.success("Account created successfully!");
-        } else {
-          console.warn("⚠️ Registration failed:", data.message);
-          toast.error(data.message);
+      
+      const { data } = await axios.post(
+        url,
+        state === "Sign Up" ? { name, email, password } : { email, password },
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          timeout: 60000 // 60 seconds for Render free tier
         }
+      );
+      
+      const responseTime = Date.now() - startTime;
+      console.log(`✅ Response received in ${responseTime}ms`);
+      console.log("📦 Response data:", data);
+      
+      if (data.success) {
+        console.log("🎉 Success! User:", data.user);
+        setIsLoggedin(true);
+        getUserData();
+        navigate("/");
+        toast.success(state === "Sign Up" ? "Account created!" : "Login successful!");
       } else {
-        const { data } = await axios.post(
-          `${backendUrl}/api/auth/login`,
-          { email, password },
-          { 
-            withCredentials: true,
-            timeout: 30000,
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-
-        console.log("⏱️ Request took:", Date.now() - startTime, "ms");
-        console.log("✅ [Login Response]:", data);
-
-        if (data.success) {
-          console.log("🎉 Login successful!");
-          setIsLoggedin(true);
-          getUserData();
-          navigate("/");
-          toast.success("Login successful!");
-        } else {
-          console.warn("⚠️ Login failed:", data.message);
-          toast.error(data.message);
-        }
+        console.warn("⚠️ API returned error:", data.message);
+        toast.error(data.message);
       }
+      
     } catch (error) {
-      console.error("❌ [API Error Details]:", {
+      console.error("❌ [Error Details]:", {
         name: error.name,
         message: error.message,
         code: error.code,
         status: error.response?.status,
         statusText: error.response?.statusText,
-        responseData: error.response?.data,
-        config: {
-          url: error.config?.url,
-          method: error.config?.method,
-          baseURL: error.config?.baseURL
-        }
+        url: error.config?.url,
+        data: error.response?.data
       });
-
+      
       // Specific error handling
       if (error.code === 'ERR_NETWORK') {
-        toast.error("Network error! Check if backend is running.");
-        console.error("🔌 Network error - Check:");
-        console.error("1. Is backend URL correct?", backendUrl);
-        console.error("2. Is Render backend running?");
-        console.error("3. Check backend URL in browser:", backendUrl);
+        toast.error("Network error. Check backend URL and CORS.");
+        console.error("💡 Check backend:", CORRECT_BACKEND_URL);
       } else if (error.response?.status === 404) {
-        toast.error("API endpoint not found. Check backend routes.");
-        console.error("🔍 404 Error - Possible issues:");
-        console.error("1. Wrong URL:", error.config?.url);
-        console.error("2. Check if routes exist in backend");
-        console.error("3. Try accessing directly:", `${backendUrl}/api/auth/test`);
+        toast.error("API endpoint not found.");
+        console.error("🔍 Test endpoint:", `${CORRECT_BACKEND_URL}/api/test`);
       } else if (error.response?.status === 500) {
-        toast.error("Server error. Please try again.");
-        console.error("💥 Server 500 error - Check backend logs");
+        toast.error("Server error. Check backend logs.");
       } else if (error.code === 'ECONNABORTED') {
-        toast.error("Request timeout. Backend might be sleeping.");
-        console.error("⏰ Timeout - Render free tier might be sleeping");
-        console.error("First request after sleep takes 30-50 seconds");
+        toast.error("Timeout - Backend might be sleeping (Render free tier). Try again.");
       } else {
         toast.error(error.response?.data?.message || error.message || "Something went wrong");
       }
@@ -162,33 +127,6 @@ const Login = () => {
       setIsLoading(false);
     }
   };
-
-  // ✅ Test backend connection on component load
-  useEffect(() => {
-    const testBackendConnection = async () => {
-      try {
-        console.log("🔗 Testing backend connection...");
-        const testUrl = `${backendUrl}/api/auth/test`; // Or just backendUrl
-        
-        // Try simple fetch to check if backend is reachable
-        const response = await fetch(backendUrl, { 
-          method: 'GET',
-          mode: 'cors'
-        });
-        
-        if (response.ok) {
-          console.log("✅ Backend is reachable!");
-        } else {
-          console.warn("⚠️ Backend returned:", response.status);
-        }
-      } catch (err) {
-        console.error("❌ Cannot reach backend:", err.message);
-        console.error("📌 Make sure URL is correct:", backendUrl);
-      }
-    };
-
-    testBackendConnection();
-  }, [backendUrl]);
 
   return (
     <div className="flex items-center justify-center min-h-screen px-6 sm:px-0 bg-gradient-to-br from-blue-200 to-purple-400">
@@ -199,24 +137,34 @@ const Login = () => {
         className="absolute left-5 sm:left-20 top-5 w-28 sm:w-32 cursor-pointer"
       />
 
-      {/* ✅ DEBUG INFO BOX */}
-      <div className="absolute top-20 right-5 bg-black/80 text-white p-3 rounded-lg text-xs max-w-xs hidden sm:block">
-        <div className="font-bold mb-1">🔍 Debug Info:</div>
-        <div>Backend URL: {backendUrl}</div>
-        <div>Status: {isLoading ? "⏳ Loading..." : "✅ Ready"}</div>
-        <div className="mt-1 text-green-300">
-          Correct URL should be: https://auth-project-mem-stack.onrender.com
+      {/* ✅ DEBUG INFO PANEL */}
+      <div className="absolute top-20 right-5 bg-black/90 text-white p-4 rounded-lg text-xs max-w-xs">
+        <div className="font-bold mb-2 text-yellow-300">🔧 Debug Panel</div>
+        <div className="mb-1">
+          <span className="text-gray-400">Backend URL:</span>
+          <div className="truncate text-green-300">{CORRECT_BACKEND_URL}</div>
+        </div>
+        <div className="mb-1">
+          <span className="text-gray-400">Status:</span>
+          <span className={`ml-2 ${debugInfo.includes('OK') ? 'text-green-400' : 'text-red-400'}`}>
+            {debugInfo || "Testing..."}
+          </span>
+        </div>
+        <div className="mb-1">
+          <span className="text-gray-400">Mode:</span>
+          <span className="ml-2">{state}</span>
         </div>
         <button 
-          onClick={() => {
-            console.log("🔄 Manual debug check:");
-            console.log("Current backendUrl:", backendUrl);
-            console.log("Expected:", "https://auth-project-mem-stack.onrender.com");
-            console.log("Match?", backendUrl.includes("auth-project-mem-stack"));
-          }}
-          className="mt-2 bg-blue-600 px-2 py-1 rounded text-xs"
+          onClick={() => window.open(CORRECT_BACKEND_URL, '_blank')}
+          className="mt-2 w-full bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded text-xs"
         >
-          Check URL in Console
+          Test Backend ↗
+        </button>
+        <button 
+          onClick={() => console.clear()}
+          className="mt-1 w-full bg-gray-700 hover:bg-gray-800 px-3 py-1.5 rounded text-xs"
+        >
+          Clear Console
         </button>
       </div>
 
@@ -231,15 +179,12 @@ const Login = () => {
             : "Login to Your Account!"}
         </p>
 
-        {/* ✅ SHOW BACKEND URL */}
-        <div className="mb-4 p-2 bg-gray-800 rounded text-xs overflow-hidden">
-          <div className="font-bold">Backend: </div>
-          <div className="truncate">{backendUrl}</div>
-          {!backendUrl.includes("auth-project-mem-stack") && (
-            <div className="text-red-400 mt-1">
-              ⚠️ Warning: URL might be incorrect!
-            </div>
-          )}
+        {/* ✅ BACKEND STATUS */}
+        <div className={`mb-4 p-3 rounded text-xs ${debugInfo.includes('OK') ? 'bg-green-900/30 border border-green-500' : 'bg-red-900/30 border border-red-500'}`}>
+          <div className="font-bold">
+            {debugInfo.includes('OK') ? '✅ Backend Connected' : '❌ Backend Issue'}
+          </div>
+          <div className="truncate mt-1">{debugInfo}</div>
         </div>
 
         {/* Form Start */}
@@ -254,6 +199,7 @@ const Login = () => {
                 type="text"
                 placeholder="Full Name"
                 disabled={isLoading}
+                required
               />
             </div>
           )}
@@ -295,7 +241,7 @@ const Login = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full py-2.5 rounded-full text-white font-medium flex items-center justify-center ${
+            className={`w-full py-2.5 rounded-full text-white font-medium flex items-center justify-center transition-all ${
               isLoading 
                 ? 'bg-gray-600 cursor-not-allowed' 
                 : 'bg-gradient-to-r from-indigo-500 to-indigo-900 hover:from-indigo-600 hover:to-indigo-950'
@@ -314,15 +260,15 @@ const Login = () => {
             )}
           </button>
         </form>
-        {/* Form End */}
 
-        <div className="mt-4 p-2 bg-gray-800/50 rounded text-xs">
-          <div className="font-bold">💡 Debug Tips:</div>
-          <ol className="list-decimal pl-4 mt-1 space-y-1">
-            <li>Open Browser Console (F12)</li>
-            <li>Check for errors in Console tab</li>
-            <li>Check Network tab for API calls</li>
-            <li>Ensure backend URL is correct</li>
+        {/* ✅ DEBUG TIPS */}
+        <div className="mt-4 p-3 bg-gray-800/50 rounded text-xs">
+          <div className="font-bold mb-1">💡 If facing issues:</div>
+          <ol className="list-decimal pl-4 space-y-1">
+            <li>Open Console (F12)</li>
+            <li>Check Network tab</li>
+            <li>Wait 30-60s for first request</li>
+            <li>Check Render backend logs</li>
           </ol>
         </div>
 
