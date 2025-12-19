@@ -8,73 +8,60 @@ import { toast } from "react-toastify";
 const Login = () => {
   const navigate = useNavigate();
 
-  // ✅ SINGLE & CORRECT BACKEND URL (Render)
-  const BACKEND_URL = "https://auth-projecrt-mern-stack.onrender.com";
+  const { backendUrl, setIsLoggedin, getUserData } = useContext(AppContext);
 
-  const { setIsLoggedin, getUserData } = useContext(AppContext);
+  // ✅ ONLY FIX — fallback backend URL
+  const FINAL_BACKEND_URL =
+    backendUrl && backendUrl.trim() !== ""
+      ? backendUrl
+      : "https://auth-projecrt-mern-stack.onrender.com";
 
   const [state, setState] = useState("Sign Up");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
-
-    if (!email || !password) {
-      toast.error("Email & Password required");
-      return;
-    }
-
-    if (state === "Sign Up" && !name) {
-      toast.error("Name is required");
-      return;
-    }
-
     try {
-      setLoading(true);
-
       axios.defaults.withCredentials = true;
 
-      const endpoint =
-        state === "Sign Up"
-          ? `${BACKEND_URL}/api/auth/register`
-          : `${BACKEND_URL}/api/auth/login`;
-
-      const payload =
-        state === "Sign Up"
-          ? { name, email, password }
-          : { email, password };
-
-      const { data } = await axios.post(endpoint, payload, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (data.success) {
-        toast.success(
-          state === "Sign Up" ? "Account created successfully" : "Login successful"
+      if (state === "Sign Up") {
+        const { data } = await axios.post(
+          `${FINAL_BACKEND_URL}/api/auth/register`,
+          {
+            name,
+            email,
+            password,
+          }
         );
 
-        setIsLoggedin(true);
-        await getUserData();
-
-        navigate("/");
+        if (data.success) {
+          setIsLoggedin(true);
+          getUserData();
+          navigate("/");
+        } else {
+          toast.error(data.message);
+        }
       } else {
-        toast.error(data.message);
+        const { data } = await axios.post(
+          `${FINAL_BACKEND_URL}/api/auth/login`,
+          {
+            email,
+            password,
+          }
+        );
+
+        if (data.success) {
+          setIsLoggedin(true);
+          getUserData();
+          navigate("/");
+        } else {
+          toast.error(data.message);
+        }
       }
     } catch (error) {
-      console.error("LOGIN ERROR:", error);
-
-      if (error.code === "ERR_NETWORK") {
-        toast.error("CORS / Backend connection issue");
-      } else {
-        toast.error(error.response?.data?.message || error.message);
-      }
-    } finally {
-      setLoading(false);
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 
@@ -83,7 +70,7 @@ const Login = () => {
       <img
         onClick={() => navigate("/")}
         src={assets.logo}
-        alt="logo"
+        alt=""
         className="absolute left-5 sm:left-20 top-5 w-28 sm:w-32 cursor-pointer"
       />
 
@@ -95,46 +82,43 @@ const Login = () => {
         <p className="text-center text-sm mb-6">
           {state === "Sign Up"
             ? "Create Your Account"
-            : "Login to Your Account"}
+            : "Login to Your Account!"}
         </p>
 
-        {/* FORM */}
+        {/* Form Start */}
         <form onSubmit={onSubmitHandler}>
           {state === "Sign Up" && (
-            <div className="mb-4 flex items-center gap-3 px-5 py-2.5 rounded-full bg-[#333A5c]">
+            <div className="mb-4 flex items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5c]">
               <img src={assets.person_icon} alt="" />
               <input
-                value={name}
                 onChange={(e) => setName(e.target.value)}
+                value={name}
                 className="bg-transparent outline-none w-full"
                 type="text"
                 placeholder="Full Name"
-                disabled={loading}
               />
             </div>
           )}
 
-          <div className="mb-4 flex items-center gap-3 px-5 py-2.5 rounded-full bg-[#333A5c]">
+          <div className="mb-4 flex items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5c]">
             <img src={assets.mail_icon} alt="" />
             <input
-              value={email}
               onChange={(e) => setEmail(e.target.value)}
+              value={email}
               className="bg-transparent outline-none w-full"
               type="email"
               placeholder="Email Id"
-              disabled={loading}
             />
           </div>
 
-          <div className="mb-4 flex items-center gap-3 px-5 py-2.5 rounded-full bg-[#333A5c]">
+          <div className="mb-4 flex items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5c]">
             <img src={assets.lock_icon} alt="" />
             <input
-              value={password}
               onChange={(e) => setPassword(e.target.value)}
+              value={password}
               className="bg-transparent outline-none w-full"
               type="password"
               placeholder="Password"
-              disabled={loading}
             />
           </div>
 
@@ -147,12 +131,12 @@ const Login = () => {
 
           <button
             type="submit"
-            disabled={loading}
             className="w-full py-2.5 rounded-full bg-gradient-to-r from-indigo-500 to-indigo-900 text-white font-medium"
           >
-            {loading ? "Please wait..." : state}
+            {state}
           </button>
         </form>
+        {/* Form End */}
 
         {state === "Sign Up" ? (
           <p className="text-gray-400 text-center text-xs mt-4">
