@@ -8,77 +8,73 @@ import { toast } from "react-toastify";
 const Login = () => {
   const navigate = useNavigate();
 
-  // ✅ ONLY ONE CORRECT URL
+  // ✅ SINGLE & CORRECT BACKEND URL (Render)
   const BACKEND_URL = "https://auth-projecrt-mern-stack.onrender.com";
-  
+
   const { setIsLoggedin, getUserData } = useContext(AppContext);
+
   const [state, setState] = useState("Sign Up");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
-      toast.error("Email and password are required");
+      toast.error("Email & Password required");
       return;
     }
 
     if (state === "Sign Up" && !name) {
-      toast.error("Name is required for sign up");
+      toast.error("Name is required");
       return;
     }
 
-    setIsLoading(true);
-    
     try {
-      if (state === "Sign Up") {
-        const { data } = await axios.post(
-          `${BACKEND_URL}/api/auth/register`,
-          { name, email, password },
-          { 
-            withCredentials: true,
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }
+      setLoading(true);
+
+      axios.defaults.withCredentials = true;
+
+      const endpoint =
+        state === "Sign Up"
+          ? `${BACKEND_URL}/api/auth/register`
+          : `${BACKEND_URL}/api/auth/login`;
+
+      const payload =
+        state === "Sign Up"
+          ? { name, email, password }
+          : { email, password };
+
+      const { data } = await axios.post(endpoint, payload, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (data.success) {
+        toast.success(
+          state === "Sign Up" ? "Account created successfully" : "Login successful"
         );
 
-        if (data.success) {
-          setIsLoggedin(true);
-          getUserData();
-          navigate("/");
-          toast.success("Account created successfully!");
-        } else {
-          toast.error(data.message);
-        }
+        setIsLoggedin(true);
+        await getUserData();
+
+        navigate("/");
       } else {
-        const { data } = await axios.post(
-          `${BACKEND_URL}/api/auth/login`,
-          { email, password },
-          { 
-            withCredentials: true,
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-
-        if (data.success) {
-          setIsLoggedin(true);
-          getUserData();
-          navigate("/");
-          toast.success("Login successful!");
-        } else {
-          toast.error(data.message);
-        }
+        toast.error(data.message);
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || error.message);
+      console.error("LOGIN ERROR:", error);
+
+      if (error.code === "ERR_NETWORK") {
+        toast.error("CORS / Backend connection issue");
+      } else {
+        toast.error(error.response?.data?.message || error.message);
+      }
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -87,7 +83,7 @@ const Login = () => {
       <img
         onClick={() => navigate("/")}
         src={assets.logo}
-        alt=""
+        alt="logo"
         className="absolute left-5 sm:left-20 top-5 w-28 sm:w-32 cursor-pointer"
       />
 
@@ -99,86 +95,81 @@ const Login = () => {
         <p className="text-center text-sm mb-6">
           {state === "Sign Up"
             ? "Create Your Account"
-            : "Login to Your Account!"}
+            : "Login to Your Account"}
         </p>
 
-        {/* Form Start */}
+        {/* FORM */}
         <form onSubmit={onSubmitHandler}>
           {state === "Sign Up" && (
-            <div className="mb-4 flex items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5c]">
+            <div className="mb-4 flex items-center gap-3 px-5 py-2.5 rounded-full bg-[#333A5c]">
               <img src={assets.person_icon} alt="" />
               <input
-                onChange={(e) => setName(e.target.value)}
                 value={name}
+                onChange={(e) => setName(e.target.value)}
                 className="bg-transparent outline-none w-full"
                 type="text"
                 placeholder="Full Name"
-                disabled={isLoading}
+                disabled={loading}
               />
             </div>
           )}
 
-          <div className="mb-4 flex items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5c]">
+          <div className="mb-4 flex items-center gap-3 px-5 py-2.5 rounded-full bg-[#333A5c]">
             <img src={assets.mail_icon} alt="" />
             <input
-              onChange={(e) => setEmail(e.target.value)}
               value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="bg-transparent outline-none w-full"
               type="email"
               placeholder="Email Id"
-              disabled={isLoading}
+              disabled={loading}
             />
           </div>
 
-          <div className="mb-4 flex items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5c]">
+          <div className="mb-4 flex items-center gap-3 px-5 py-2.5 rounded-full bg-[#333A5c]">
             <img src={assets.lock_icon} alt="" />
             <input
-              onChange={(e) => setPassword(e.target.value)}
               value={password}
+              onChange={(e) => setPassword(e.target.value)}
               className="bg-transparent outline-none w-full"
               type="password"
               placeholder="Password"
-              disabled={isLoading}
+              disabled={loading}
             />
           </div>
 
           <p
-            onClick={() => !isLoading && navigate("/reset-password")}
-            className={`mb-4 ${isLoading ? 'text-gray-500' : 'text-indigo-500 cursor-pointer'}`}
+            onClick={() => navigate("/reset-password")}
+            className="mb-4 text-indigo-500 cursor-pointer"
           >
             Forget password?
           </p>
 
           <button
             type="submit"
-            disabled={isLoading}
-            className={`w-full py-2.5 rounded-full text-white font-medium ${
-              isLoading 
-                ? 'bg-gray-600 cursor-not-allowed' 
-                : 'bg-gradient-to-r from-indigo-500 to-indigo-900 hover:from-indigo-600 hover:to-indigo-950'
-            }`}
+            disabled={loading}
+            className="w-full py-2.5 rounded-full bg-gradient-to-r from-indigo-500 to-indigo-900 text-white font-medium"
           >
-            {isLoading ? "Processing..." : state}
+            {loading ? "Please wait..." : state}
           </button>
         </form>
-        {/* Form End */}
 
         {state === "Sign Up" ? (
           <p className="text-gray-400 text-center text-xs mt-4">
             Already have an account?{" "}
             <span
-              onClick={() => !isLoading && setState("Login")}
-              className={`${isLoading ? 'text-gray-500' : 'text-blue-400 cursor-pointer underline'}`}
+              onClick={() => setState("Login")}
+              className="text-blue-400 cursor-pointer underline"
             >
               Login here
             </span>
           </p>
         ) : (
           <p className="text-gray-400 text-center text-xs mt-4">
-            Don't have an account?{" "}
+            Don’t have an account?{" "}
             <span
-              onClick={() => !isLoading && setState("Sign Up")}
-              className={`${isLoading ? 'text-gray-500' : 'text-blue-400 cursor-pointer underline'}`}
+              onClick={() => setState("Sign Up")}
+              className="text-blue-400 cursor-pointer underline"
             >
               Sign Up
             </span>
