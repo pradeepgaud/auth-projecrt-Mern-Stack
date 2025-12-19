@@ -2,14 +2,20 @@ import React, { useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets";
 import AppContext from "../Context/AppContext";
-
 import axios from "axios";
 import { toast } from "react-toastify";
 
 const EmailVerify = () => {
   axios.defaults.withCredentials = true;
+
   const { backendUrl, getUserData, isLoggedin, userData } =
     useContext(AppContext);
+
+  // ✅ ONLY FIX — fallback backend URL
+  const FINAL_BACKEND_URL =
+    backendUrl && backendUrl.trim() !== ""
+      ? backendUrl
+      : "https://auth-projecrt-mern-stack.onrender.com";
 
   const navigate = useNavigate();
   const inputRefs = React.useRef([]);
@@ -49,12 +55,13 @@ const EmailVerify = () => {
     e.preventDefault();
 
     try {
-      const otpArray = inputRefs.current.map((e) => e.value);
+      const otpArray = inputRefs.current.map((el) => el.value);
       const otp = otpArray.join("");
 
       const { data } = await axios.post(
-        backendUrl + "/api/auth/verify-account",
-        { otp }
+        `${FINAL_BACKEND_URL}/api/auth/verify-account`,
+        { otp },
+        { withCredentials: true }
       );
 
       if (data.success) {
@@ -70,8 +77,10 @@ const EmailVerify = () => {
   };
 
   useEffect(() => {
-    isLoggedin && userData && userData.isAccountVerified && navigate("/");
-  }, [isLoggedin, userData]);
+    if (isLoggedin && userData && userData.isAccountVerified) {
+      navigate("/");
+    }
+  }, [isLoggedin, userData, navigate]);
 
   return (
     <div className="flex items-center justify-center min-h-screen px-6 sm:px-0 bg-gradient-to-br from-blue-200 to-purple-400">
@@ -99,9 +108,9 @@ const EmailVerify = () => {
             .fill(0)
             .map((_, index) => (
               <input
+                key={index}
                 type="text"
                 maxLength="1"
-                key={index}
                 required
                 className="w-12 h-12 bg-[#333A5C] text-white text-center text-xl rounded-md"
                 ref={(el) => (inputRefs.current[index] = el)}
@@ -118,8 +127,6 @@ const EmailVerify = () => {
           Verify email
         </button>
       </form>
-
-
     </div>
   );
 };
