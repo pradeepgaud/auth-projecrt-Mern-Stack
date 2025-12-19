@@ -7,6 +7,13 @@ import { toast } from "react-toastify";
 
 const ResetPassword = () => {
   const { backendUrl } = useContext(AppContext);
+
+  // ✅ ONLY FIX — fallback backend URL
+  const FINAL_BACKEND_URL =
+    backendUrl && backendUrl.trim() !== ""
+      ? backendUrl
+      : "https://auth-projecrt-mern-stack.onrender.com";
+
   axios.defaults.withCredentials = true;
 
   const navigate = useNavigate();
@@ -20,7 +27,6 @@ const ResetPassword = () => {
 
   // Move to next input
   const handleInput = (e, index) => {
-    // allow only digits (optional)
     e.target.value = e.target.value.replace(/[^0-9]/g, "").slice(0, 1);
 
     if (e.target.value.length > 0 && index < inputRefs.current.length - 1) {
@@ -58,14 +64,15 @@ const ResetPassword = () => {
     e.preventDefault();
     try {
       const { data } = await axios.post(
-        `${backendUrl}/api/auth/send-reset-otp`,
-        { email }
+        `${FINAL_BACKEND_URL}/api/auth/send-reset-otp`,
+        { email },
+        { withCredentials: true }
       );
 
       data.success ? toast.success(data.message) : toast.error(data.message);
+
       if (data.success) {
         setIsEmailSend(true);
-        // focus first OTP input after small delay
         setTimeout(() => inputRefs.current[0]?.focus(), 100);
       }
     } catch (error) {
@@ -73,12 +80,13 @@ const ResetPassword = () => {
     }
   };
 
-  // Collect OTP from inputs and show password form
+  // Collect OTP
   const onSubmitOtp = (e) => {
     e.preventDefault();
 
     const otpArray = inputRefs.current.map((el) => (el ? el.value : ""));
     const joinedOtp = otpArray.join("");
+
     if (joinedOtp.length < 6) {
       toast.error("Please enter a 6-digit OTP");
       return;
@@ -87,16 +95,15 @@ const ResetPassword = () => {
     setOtp(joinedOtp);
     seIsOtpSubmited(true);
 
-    // focus new password field after showing it
     setTimeout(() => {
-      const pwdInput = document.querySelector("#new-password-input");
-      pwdInput?.focus();
+      document.querySelector("#new-password-input")?.focus();
     }, 100);
   };
 
-  // Submit new password to backend
+  // Submit new password
   const onSubmitPassword = async (e) => {
     e.preventDefault();
+
     if (!newPassword || newPassword.length < 6) {
       toast.error("Password should be at least 6 characters");
       return;
@@ -104,15 +111,17 @@ const ResetPassword = () => {
 
     try {
       const { data } = await axios.post(
-        `${backendUrl}/api/auth/reset-password`,
+        `${FINAL_BACKEND_URL}/api/auth/reset-password`,
         {
           email,
           otp,
           newPassword,
-        }
+        },
+        { withCredentials: true }
       );
 
       data.success ? toast.success(data.message) : toast.error(data.message);
+
       if (data.success) {
         navigate("/login");
       }
@@ -130,7 +139,7 @@ const ResetPassword = () => {
         className="absolute left-5 sm:left-20 top-5 w-28 sm:w-32 cursor-pointer"
       />
 
-      {/* enter email id */}
+      {/* Enter Email */}
       {!isEmailSend && (
         <form
           onSubmit={onSubmitEmail}
@@ -141,7 +150,7 @@ const ResetPassword = () => {
           </h1>
 
           <p className="text-center mb-6 text-indigo-300">
-            Enter Your registered email address
+            Enter your registered email address
           </p>
 
           <div className="mb-4 flex items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5C]">
@@ -162,7 +171,7 @@ const ResetPassword = () => {
         </form>
       )}
 
-      {/* otp input form */}
+      {/* OTP */}
       {!isOtpSubmited && isEmailSend && (
         <form
           onSubmit={onSubmitOtp}
@@ -181,11 +190,11 @@ const ResetPassword = () => {
               .fill(0)
               .map((_, index) => (
                 <input
+                  key={index}
                   type="text"
                   inputMode="numeric"
                   pattern="\d*"
                   maxLength="1"
-                  key={index}
                   required
                   className="w-12 h-12 bg-[#333A5C] text-white text-center text-xl rounded-md"
                   ref={(el) => (inputRefs.current[index] = el)}
@@ -204,18 +213,20 @@ const ResetPassword = () => {
         </form>
       )}
 
-      {/* enter new password */}
+      {/* New Password */}
       {isOtpSubmited && isEmailSend && (
         <form
           onSubmit={onSubmitPassword}
           className="bg-slate-900 p-8 rounded-lg shadow-lg w-96 text-sm"
         >
-          <h1 className="text-white text-2xl font-semibold text-center mb-4 ">
+          <h1 className="text-white text-2xl font-semibold text-center mb-4">
             New Password
           </h1>
-          <p className="text-center mb-6 text-indigo-300 ">
+
+          <p className="text-center mb-6 text-indigo-300">
             Enter the new password below
           </p>
+
           <div className="mb-4 flex items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5C]">
             <img src={assets.lock_icon} alt="" className="w-3 h-3" />
             <input
@@ -228,6 +239,7 @@ const ResetPassword = () => {
               required
             />
           </div>
+
           <button className="w-full py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-900 text-white rounded-full mt-3">
             Submit
           </button>
